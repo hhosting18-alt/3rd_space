@@ -370,6 +370,9 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 /* a little up-and-down with every step (uses the separate translate property so it stacks with the walk) */
 @keyframes crowd-step { from { translate: 0 0; } to { translate: 0 -4px; } }
+/* once js/main.js has rigged the legs, the drawing is an inline <svg>; the legs carry the step, so no group bob */
+svg.crowd { display: block; height: auto; overflow: visible; }
+.crowd.is-rigged { animation: crowd-walk 44s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .crowd { animation: none; } }
 .footer-box { position: relative; background: var(--ink); color: var(--white); display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 24px; padding: clamp(28px, 3.4vw, 51px) clamp(24px, 4.5vw, 67px) clamp(28px, 4.4vw, 67px); }
 .footer-box .logo { font-size: clamp(26px, 2.63vw, 40px); color: var(--white); }
