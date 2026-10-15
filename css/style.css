@@ -353,6 +353,24 @@ button, input, textarea { font: inherit; color: inherit; }
 .site-footer { position: relative; padding: clamp(150px, 15vw, 230px) clamp(16px, 3.2vw, 49px) clamp(30px, 3.2vw, 48px); margin-top: clamp(-30px, -1vw, 0px); }
 .site-footer::before { content: ""; position: absolute; inset: 0; background: var(--yellow); clip-path: polygon(3.8% 0, 100% 18%, 100% 100%, 0 100%, 0 14%); z-index: -1; }
 .crowd { position: absolute; left: clamp(10px, 3.8vw, 58px); top: clamp(10px, 1vw, 15px); width: clamp(330px, 38.1vw, 577px); }
+/* the crowd walks along the top of the footer box to the far end, turns around and walks back.
+   --walk = footer width minus the crowd's width and its left margin on both sides */
+.crowd {
+  --walk: max(0px, calc(100vw - clamp(330px, 38.1vw, 577px) - 2 * clamp(10px, 3.8vw, 58px)));
+  transform-origin: 50% 100%;
+  animation: crowd-walk 44s linear infinite, crowd-step .55s ease-in-out infinite alternate;
+  will-change: transform, translate;
+}
+@keyframes crowd-walk {
+  0%, 4% { transform: translateX(0) scaleX(1); }            /* short pause, facing right */
+  46% { transform: translateX(var(--walk)) scaleX(1); }     /* walk to the far end */
+  50%, 54% { transform: translateX(var(--walk)) scaleX(-1); } /* turn around, pause */
+  96% { transform: translateX(0) scaleX(-1); }              /* walk back */
+  100% { transform: translateX(0) scaleX(1); }              /* turn to face right again */
+}
+/* a little up-and-down with every step (uses the separate translate property so it stacks with the walk) */
+@keyframes crowd-step { from { translate: 0 0; } to { translate: 0 -4px; } }
+@media (prefers-reduced-motion: reduce) { .crowd { animation: none; } }
 .footer-box { position: relative; background: var(--ink); color: var(--white); display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 24px; padding: clamp(28px, 3.4vw, 51px) clamp(24px, 4.5vw, 67px) clamp(28px, 4.4vw, 67px); }
 .footer-box .logo { font-size: clamp(26px, 2.63vw, 40px); color: var(--white); }
 .footer-box .tag { color: var(--yellow); font-family: var(--body); font-size: clamp(13px, 1.19vw, 18px); line-height: 1.28; margin-top: 8px; max-width: 18em; }
