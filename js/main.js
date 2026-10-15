@@ -190,12 +190,16 @@
   var STEP_SECONDS = 0.9;   // one step (stride -> feet together -> stride)
   var LEG_SWING = 13;       // degrees each leg swings in from the drawn stride
   if (crowdImg && !reduceMotion && window.fetch && window.DOMParser) {
-    fetch(crowdImg.src)
-      .then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
-      .then(rigCrowd)
+    // the marching band + dancer that trail the crowd live in band.svg, next to crowd.svg
+    var bandUrl = crowdImg.src.replace(/crowd\.svg(\?.*)?$/, "band.svg");
+    var getText = function (url) {
+      return fetch(url).then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); });
+    };
+    Promise.all([getText(crowdImg.src), getText(bandUrl).catch(function () { return null; })])
+      .then(function (res) { rigCrowd(res[0], res[1]); })
       .catch(function () { /* keep the plain image */ });
   }
-  function rigCrowd(txt) {
+  function rigCrowd(txt, bandTxt) {
     var SVGNS = "http://www.w3.org/2000/svg";
     var parsed = new DOMParser().parseFromString(txt, "image/svg+xml").documentElement;
     if (!parsed || parsed.nodeName.toLowerCase() !== "svg") return;
@@ -240,9 +244,30 @@
       return person;
     });
 
+    // the band joins the back of the line: it's drawn to the left of the crowd and the picture is widened to fit
+    var bandUpdate = null, extraClass = "";
+    if (bandTxt) {
+      try {
+        var bandSvg = new DOMParser().parseFromString(bandTxt, "image/svg+xml").documentElement;
+        if (bandSvg && bandSvg.nodeName.toLowerCase() === "svg") {
+          bandSvg = document.importNode(bandSvg, true);
+          var BAND_W = 312, GAP = 8, shift = BAND_W + GAP;
+          var bandG = document.createElementNS(SVGNS, "g");
+          bandG.setAttribute("transform", "translate(" + (-shift) + " 0)");
+          while (bandSvg.firstChild) bandG.appendChild(bandSvg.firstChild);
+          space.appendChild(bandG);
+          var vb = svg.getAttribute("viewBox").trim().split(/[\s,]+/).map(Number);
+          svg.setAttribute("viewBox", (vb[0] - shift) + " " + vb[1] + " " + (vb[2] + shift) + " " + vb[3]);
+          svg.style.setProperty("--k", ((vb[2] + shift) / vb[2]).toFixed(4));
+          extraClass = " has-band";
+          bandUpdate = setupBand(bandG);
+        }
+      } catch (e) { bandUpdate = null; }
+    }
+
     svg.removeAttribute("width");
     svg.removeAttribute("height");
-    svg.setAttribute("class", crowdImg.getAttribute("class") + " is-rigged");
+    svg.setAttribute("class", crowdImg.getAttribute("class") + " is-rigged" + extraClass);
     svg.setAttribute("aria-hidden", "true");
     svg.setAttribute("focusable", "false");
     crowdImg.parentNode.replaceChild(svg, crowdImg);
@@ -274,6 +299,7 @@
         m.back.forEach(function (g) { g.setAttribute("transform", tb); });
         m.front.forEach(function (g) { g.setAttribute("transform", tf); });
       });
+      if (bandUpdate) bandUpdate(now / 1000, dt, still);
       raf = requestAnimationFrame(frame);
     }
     function start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
@@ -286,6 +312,70 @@
     } else {
       start();
     }
+  }
+
+  /* the band's moving parts are marked in band.svg with data-swing / data-bob / data-spin / data-emit
+     (see the comment at the top of that file); this returns a function that poses them for time t */
+  function setupBand(band) {
+    var SVGNS = "http://www.w3.org/2000/svg", XLINK = "http://www.w3.org/1999/xlink";
+    var NOTE_COLORS = ["#a259ff", "#353ed7", "#ff5c5c", "#1b1b1b", "#e35e30"];
+    var nums = function (el, name) { return el.getAttribute(name).trim().split(/\s+/); };
+    var swings = [].map.call(band.querySelectorAll("[data-swing]"), function (el) {
+      var v = nums(el, "data-swing");
+      return { el: el, amp: +v[0], per: +v[1], ph: +v[2], px: +v[3], py: +v[4], pulse: v[5] === "pulse", leg: el.hasAttribute("data-leg") };
+    });
+    var movers = [].map.call(band.querySelectorAll("[data-bob],[data-spin]"), function (el) {
+      var b = el.hasAttribute("data-bob") ? nums(el, "data-bob") : [0, 1, 0];
+      var s = el.hasAttribute("data-spin") ? nums(el, "data-spin") : null;
+      return { el: el, amp: +b[0], per: +b[1], ph: +b[2], spin: s ? +s[0] : 0, spx: s ? +s[1] : 0 };
+    });
+    var emitters = [].map.call(band.querySelectorAll("[data-emit]"), function (el) {
+      var v = nums(el, "data-emit");
+      return { x: +v[0], y: +v[1], ang: +v[2] * Math.PI / 180, every: +v[3], next: Math.random() * +v[3] };
+    });
+    var notes = [], wave = function (t, per, ph) { return Math.sin(2 * Math.PI * (t / per + ph)); };
+    function spawn(em) {                         // a little music note floats out, drifts up and fades
+      var u = document.createElementNS(SVGNS, "use");
+      var ref = "#band-note" + (Math.random() < 0.6 ? 1 : 2);
+      u.setAttribute("href", ref);
+      u.setAttributeNS(XLINK, "xlink:href", ref);
+      u.setAttribute("fill", NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)]);
+      band.appendChild(u);
+      notes.push({ el: u, x: em.x, y: em.y, ang: em.ang + (Math.random() - 0.5) * 0.5, sp: 18 + Math.random() * 10,
+                   age: 0, life: 2.2 + Math.random() * 0.9, seed: Math.random() * 6.28, size: 0.75 + Math.random() * 0.35 });
+    }
+    return function update(t, dt, still) {
+      swings.forEach(function (p) {
+        var w = wave(t, p.per, p.ph);
+        if (p.pulse) w = Math.pow(Math.max(0, w), 2);
+        if (p.leg) w *= 1 - still;                 // legs settle while the group pauses; the music keeps going
+        p.el.setAttribute("transform", "rotate(" + (p.amp * w).toFixed(2) + " " + p.px + " " + p.py + ")");
+      });
+      movers.forEach(function (m) {
+        var tr = "translate(0 " + (-m.amp * Math.abs(wave(t, m.per, m.ph))).toFixed(2) + ")";
+        if (m.spin) {
+          var u = (t % m.spin) / 0.7, c = u < 1 ? Math.cos(2 * Math.PI * u) : 1;
+          if (c < 1) tr += " translate(" + m.spx + " 0) scale(" + c.toFixed(3) + " 1) translate(" + (-m.spx) + " 0)";
+        }
+        m.el.setAttribute("transform", tr);
+      });
+      emitters.forEach(function (em) {
+        em.next -= dt;
+        if (em.next <= 0) { spawn(em); em.next = em.every * (0.6 + Math.random() * 0.8); }
+      });
+      notes = notes.filter(function (n) {
+        n.age += dt;
+        if (n.age >= n.life) { n.el.parentNode.removeChild(n.el); return false; }
+        var a = n.age, x = n.x + Math.cos(n.ang) * n.sp * a + Math.sin(a * 3 + n.seed) * 3;
+        var y = n.y + Math.sin(n.ang) * n.sp * a - 9 * a;
+        var op = Math.min(1, a / 0.25) * (1 - Math.max(0, (a - n.life * 0.55) / (n.life * 0.45)));
+        var sc = n.size * (0.55 + 0.45 * Math.min(1, a / 0.4));
+        n.el.setAttribute("opacity", op.toFixed(2));
+        n.el.setAttribute("transform", "translate(" + x.toFixed(1) + " " + y.toFixed(1) + ") rotate(" +
+          (Math.sin(a * 2 + n.seed) * 15).toFixed(1) + ") scale(" + sc.toFixed(2) + ")");
+        return true;
+      });
+    };
   }
 
   /* ---------------- floating scroll bar: just the purple bar, no track (the native one is hidden in CSS) */

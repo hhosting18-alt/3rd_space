@@ -352,11 +352,14 @@ button, input, textarea { font: inherit; color: inherit; }
 /* ------------------------------------------------------------ footer */
 .site-footer { position: relative; padding: clamp(150px, 15vw, 230px) clamp(16px, 3.2vw, 49px) clamp(30px, 3.2vw, 48px); margin-top: clamp(-30px, -1vw, 0px); }
 .site-footer::before { content: ""; position: absolute; inset: 0; background: var(--yellow); clip-path: polygon(3.8% 0, 100% 18%, 100% 100%, 0 100%, 0 14%); z-index: -1; }
-.crowd { position: absolute; left: clamp(10px, 3.8vw, 58px); top: clamp(10px, 1vw, 15px); width: clamp(330px, 38.1vw, 577px); }
+.crowd { position: absolute; left: clamp(10px, 3.8vw, 58px); top: clamp(10px, 1vw, 15px); --cw: clamp(330px, 38.1vw, 577px); width: var(--cw); }
+/* with the band at the back the picture is --k times wider (set by js/main.js); people keep their size,
+   but the whole lineup never gets wider than the footer */
+.crowd.has-band { --cw: min(calc(clamp(330px, 38.1vw, 577px) * var(--k, 1)), calc(100vw - 2 * clamp(10px, 3.8vw, 58px))); }
 /* the crowd walks along the top of the footer box to the far end, turns around and walks back.
    --walk = footer width minus the crowd's width and its left margin on both sides */
 .crowd {
-  --walk: max(0px, calc(100vw - clamp(330px, 38.1vw, 577px) - 2 * clamp(10px, 3.8vw, 58px)));
+  --walk: max(0px, calc(100vw - var(--cw) - 2 * clamp(10px, 3.8vw, 58px)));
   transform-origin: 50% 100%;
   animation: crowd-walk 44s linear infinite, crowd-step .55s ease-in-out infinite alternate;
   will-change: transform, translate;

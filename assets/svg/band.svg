@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 312 216.1" width="312" height="216.1">
+<!-- Marching band that trails the footer crowd. Same flat style / palette as crowd.svg.
+     Moving parts are marked for js/main.js:
+       data-swing="amp period phase px py"  rotate around (px,py) by amp*sin(2pi(t/period+phase)) degrees
+       data-leg                             the swing calms down while the group pauses
+       data-bob="amp period phase"          bounce up and down
+       data-emit="x y angle every"          spawns music notes at x,y heading towards angle (deg, 0 = forward, -90 = up)
+       data-swing="... pulse"               only swings one way, in short bursts (kicks, arm points)
+       data-spin="period px"                a quick full spin around x = px once every period seconds -->
+<defs>
+  <g id="band-note1">
+    <ellipse cx="0" cy="0" rx="3.4" ry="2.5" transform="rotate(-22)"/>
+    <rect x="2.2" y="-13" width="1.3" height="13"/>
+    <path d="M3.5 -13 C 6 -10.5 8 -9.5 7 -5.5 C 6.8 -8 5.5 -9 3.5 -10 Z"/>
+  </g>
+  <g id="band-note2">
+    <ellipse cx="0" cy="0" rx="3.2" ry="2.4" transform="rotate(-22)"/>
+    <ellipse cx="9" cy="-2" rx="3.2" ry="2.4" transform="rotate(-22 9 -2)"/>
+    <rect x="2.1" y="-13" width="1.3" height="13"/>
+    <rect x="11.1" y="-15" width="1.3" height="13"/>
+    <path d="M2.1 -13 L12.4 -15 L12.4 -12.4 L2.1 -10.4 Z"/>
+  </g>
+</defs>
+
+<!-- ============ DRUMMER (back of the band) ============ -->
+<g id="drummer" data-bob="1.6 0.7 0.1">
+  <!-- back leg -->
+  <g data-swing="15 1.4 0.5 40 122" data-leg="">
+    <path d="M33 118 L47 118 L45 196 L36 196 Z" fill="#33335f"/>
+    <path d="M34 192 L46 192 L52 199 L52 203 L33 203 Z" fill="#2b1210"/>
+  </g>
+  <!-- front leg -->
+  <g data-swing="15 1.4 0 40 122" data-leg="">
+    <path d="M33 118 L47 118 L46 196 L36 196 Z" fill="#464686"/>
+    <path d="M44 128 L44 190" stroke="#2b1210" stroke-width="0.8" fill="none"/>
+    <path d="M35 192 L47 192 L54 199 L54 204 L34 204 Z" fill="#4b2522"/>
+    <path d="M34 202 L54 202 L54 204 L34 204 Z" fill="#2b1210"/>
+  </g>
+  <!-- back arm + stick -->
+  <path d="M36 70 C 32 82 34 92 40 99" stroke="#8f4530" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <g data-swing="16 0.5 0.5 40 99">
+    <path d="M40 99 L58 104" stroke="#8f4530" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+    <path d="M57 103 L80 92" stroke="#f6e8df" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    <circle cx="80" cy="92" r="1.9" fill="#f6e8df"/>
+  </g>
+  <!-- torso: mustard hoodie -->
+  <path d="M27 72 C 27 62 35 58 42 58 C 50 58 56 63 56 72 L57 126 L25 126 Z" fill="#f2a041"/>
+  <path d="M25 120 L57 120 L57 127 L25 127 Z" fill="#e0902f"/>
+  <path d="M41 62 L41 100" stroke="#42211e" stroke-width="0.8" fill="none"/>
+  <!-- drum strap -->
+  <path d="M30 64 L64 112" stroke="#353ed7" stroke-width="4" fill="none"/>
+  <!-- snare drum -->
+  <g>
+    <rect x="47" y="110" width="38" height="22" fill="#e35e30"/>
+    <path d="M47 110 L54 132 L61 110 L68 132 L75 110 L82 132 L85 122" stroke="#f6e8df" stroke-width="1.1" fill="none"/>
+    <ellipse cx="66" cy="132" rx="19" ry="5" fill="#c44d23"/>
+    <rect x="47" y="128" width="38" height="4" fill="#c44d23"/>
+    <ellipse cx="66" cy="110" rx="19" ry="5" fill="#f6e8df"/>
+    <ellipse cx="66" cy="110" rx="19" ry="5" fill="none" stroke="#42211e" stroke-width="0.8"/>
+  </g>
+  <!-- front arm + stick -->
+  <path d="M46 70 C 50 82 50 90 50 98" stroke="#a14e36" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <g data-swing="16 0.5 0 50 98">
+    <path d="M50 98 L66 100" stroke="#a14e36" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+    <path d="M65 99 L84 86" stroke="#f6e8df" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    <circle cx="84" cy="86" r="1.9" fill="#f6e8df"/>
+  </g>
+  <!-- head -->
+  <rect x="38" y="48" width="8" height="12" fill="#a14e36"/>
+  <ellipse cx="44" cy="40" rx="11" ry="13" fill="#a14e36"/>
+  <circle cx="37" cy="31" r="9" fill="#2b1210"/>
+  <circle cx="45" cy="27" r="9" fill="#2b1210"/>
+  <circle cx="33" cy="40" r="7" fill="#2b1210"/>
+  <ellipse cx="40" cy="41" rx="2.2" ry="3" fill="#8f4530"/>
+  <g data-emit="70 104 -70 1.1"/>
+</g>
+
+<!-- ============ TRUMPET ============ -->
+<g id="trumpeter" data-bob="1.6 0.7 0.45">
+  <g data-swing="15 1.4 0.85 116 120" data-leg="">
+    <path d="M109 116 L123 116 L121 196 L112 196 Z" fill="#46603f"/>
+    <path d="M110 192 L122 192 L128 199 L128 203 L109 203 Z" fill="#7a3521"/>
+  </g>
+  <g data-swing="15 1.4 0.35 116 120" data-leg="">
+    <path d="M109 116 L123 116 L122 196 L112 196 Z" fill="#5a744f"/>
+    <path d="M111 192 L123 192 L130 199 L130 204 L110 204 Z" fill="#9e5f3e"/>
+    <path d="M110 202 L130 202 L130 204 L110 204 Z" fill="#4b2522"/>
+  </g>
+  <!-- back arm (holding the trumpet underneath) -->
+  <path d="M112 70 C 112 84 122 90 136 64" stroke="#e8ae7b" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <!-- torso: pink jacket -->
+  <path d="M103 72 C 103 62 110 58 118 58 C 126 58 132 63 132 72 L133 124 L101 124 Z" fill="#cb4d8a"/>
+  <path d="M118 60 L114 76 L118 124" stroke="#a43a6e" stroke-width="1.2" fill="none"/>
+  <path d="M103 116 L133 116" stroke="#a43a6e" stroke-width="1.2"/>
+  <!-- head -->
+  <rect x="114" y="47" width="8" height="12" fill="#ffcda1"/>
+  <ellipse cx="121" cy="39" rx="11" ry="13" fill="#ffcda1"/>
+  <path d="M109 38 C 107 26 116 22 124 24 C 130 25 133 29 132 32 C 124 31 118 33 114 42 Z" fill="#4b2522"/>
+  <ellipse cx="116" cy="40" rx="2" ry="2.8" fill="#e8ae7b"/>
+  <ellipse cx="128" cy="45" rx="3.2" ry="3" fill="#ffb98a"/>
+  <!-- trumpet (bobs a little while playing) -->
+  <g data-swing="4 1.2 0 130 47">
+    <path d="M130 46 L160 46 L160 49 L130 49 Z" fill="#f2a041"/>
+    <path d="M136 49 C 136 56 156 56 156 49" stroke="#f2a041" stroke-width="3" fill="none"/>
+    <path d="M158 47.5 L170 39 L170 56 Z" fill="#f2a041"/>
+    <ellipse cx="170" cy="47.5" rx="2.4" ry="8.5" fill="#ffc870"/>
+    <rect x="142" y="40" width="2.6" height="6" fill="#e0902f"/>
+    <rect x="146.5" y="40" width="2.6" height="6" fill="#e0902f"/>
+    <rect x="151" y="40" width="2.6" height="6" fill="#e0902f"/>
+    <rect x="128" y="45.5" width="3" height="4" fill="#2b1210"/>
+    <!-- front hand on the valves -->
+    <path d="M128 72 C 132 66 138 58 146 47" stroke="#ffcda1" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <g data-emit="172 46 -15 0.8"/>
+  </g>
+</g>
+
+<!-- ============ SINGING GUITARIST ============ -->
+<g id="guitarist" data-bob="1.6 0.7 0.8">
+  <g data-swing="15 1.4 0.2 190 120" data-leg="">
+    <path d="M183 116 L197 116 L195 196 L186 196 Z" fill="#33171a"/>
+    <path d="M184 192 L196 192 L202 199 L202 203 L183 203 Z" fill="#d9cfc9"/>
+  </g>
+  <g data-swing="15 1.4 0.7 190 120" data-leg="">
+    <path d="M183 116 L197 116 L196 196 L186 196 Z" fill="#4b2522"/>
+    <path d="M185 192 L197 192 L204 199 L204 204 L184 204 Z" fill="#f6e8df"/>
+    <path d="M184 202 L204 202 L204 204 L184 204 Z" fill="#9e5f3e"/>
+  </g>
+  <!-- back arm reaching the guitar neck -->
+  <path d="M186 70 C 190 86 206 88 220 76" stroke="#c96a48" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <!-- torso: navy tee -->
+  <path d="M177 72 C 177 62 184 58 192 58 C 200 58 206 63 206 72 L207 124 L175 124 Z" fill="#353ed7"/>
+  <path d="M175 118 L207 118" stroke="#2a31ad" stroke-width="1.2"/>
+  <!-- guitar -->
+  <g>
+    <path d="M200 98 L232 64 L235 67 L203 101 Z" fill="#4b2522"/>
+    <path d="M230 62 L238 55 L242 59 L234 67 Z" fill="#2b1210"/>
+    <circle cx="198" cy="106" r="15" fill="#f2a041"/>
+    <circle cx="187" cy="117" r="12" fill="#f2a041"/>
+    <circle cx="195" cy="109" r="5" fill="#4b2522"/>
+    <path d="M182 119 L188 125" stroke="#4b2522" stroke-width="3" stroke-linecap="round"/>
+    <path d="M190 112 L233 66" stroke="#f6e8df" stroke-width="0.6"/>
+    <circle cx="220" cy="76" r="4" fill="#e67f59"/>
+    <g data-emit="200 104 -60 1.3"/>
+  </g>
+  <!-- strumming arm -->
+  <path d="M196 70 C 200 80 196 90 190 96" stroke="#e67f59" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <g data-swing="14 0.36 0 190 96">
+    <path d="M190 96 L193 112" stroke="#e67f59" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+  </g>
+  <!-- head, tilted up while singing -->
+  <rect x="188" y="47" width="8" height="12" fill="#e67f59"/>
+  <g transform="rotate(-10 194 40)">
+    <ellipse cx="195" cy="39" rx="11" ry="13" fill="#e67f59"/>
+    <path d="M183 44 C 179 28 188 22 197 24 C 204 25 207 30 206 33 C 198 31 192 34 189 48 C 187 54 182 58 180 56 Z" fill="#4b2522"/>
+    <ellipse cx="190" cy="41" rx="2" ry="2.8" fill="#c96a48"/>
+    <ellipse cx="204.5" cy="45" rx="2.4" ry="3.2" fill="#2b1210"/>
+  </g>
+  <g data-emit="210 43 -45 0.9"/>
+</g>
+
+<!-- ============ DANCER (between the band and the crowd): kicks, spins, points, toe-stands ============ -->
+<g id="dancer" data-bob="3 0.8 0" data-spin="5.5 276">
+  <!-- standing leg -->
+  <g data-swing="6 0.8 0.5 276 120">
+    <path d="M270 116 L282 116 L279 196 L271 196 Z" fill="#1b1b1b"/>
+    <path d="M269 191 L280 191 L286 198 L286 203 L268 203 Z" fill="#f6e8df"/>
+    <path d="M268 201 L286 201 L286 203 L268 203 Z" fill="#9e5f3e"/>
+  </g>
+  <!-- kicking leg -->
+  <g data-swing="-48 1.6 0 276 120 pulse">
+    <path d="M270 116 L282 116 L281 196 L272 196 Z" fill="#2b2b2b"/>
+    <path d="M271 191 L282 191 L289 198 L289 204 L270 204 Z" fill="#ffffff"/>
+    <path d="M270 202 L289 202 L289 204 L270 204 Z" fill="#9e5f3e"/>
+  </g>
+  <!-- upper body sways from the hips -->
+  <g data-swing="7 0.8 0.25 276 122">
+    <!-- arm on the hip -->
+    <path d="M266 70 C 258 84 260 96 270 104" stroke="#7a3521" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+    <!-- torso: purple jacket over a white tee -->
+    <path d="M262 72 C 262 62 268 58 276 58 C 284 58 290 63 290 72 L290 124 L261 124 Z" fill="#a259ff"/>
+    <path d="M272 60 L280 60 L279 124 L273 124 Z" fill="#f6e8df"/>
+    <path d="M272 60 L268 84 L273 124" stroke="#7d3fd6" stroke-width="1.2" fill="none"/>
+    <path d="M280 60 L284 84 L279 124" stroke="#7d3fd6" stroke-width="1.2" fill="none"/>
+    <path d="M261 117 L290 117" stroke="#1b1b1b" stroke-width="3"/>
+    <!-- pointing arm: shoots up to the sky -->
+    <g data-swing="-120 1.6 0.5 285 66 pulse">
+      <path d="M285 66 C 293 76 298 86 300 96" stroke="#a259ff" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M300 96 L301 104" stroke="#a14e36" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+    </g>
+    <!-- head -->
+    <rect x="272" y="47" width="8" height="12" fill="#a14e36"/>
+    <ellipse cx="279" cy="39" rx="11" ry="13" fill="#a14e36"/>
+    <circle cx="272" cy="28" r="6" fill="#1b1b1b"/>
+    <circle cx="280" cy="25.5" r="6" fill="#1b1b1b"/>
+    <circle cx="287" cy="29" r="5" fill="#1b1b1b"/>
+    <circle cx="268" cy="35" r="5.5" fill="#1b1b1b"/>
+    <circle cx="268" cy="43" r="4.5" fill="#1b1b1b"/>
+    <ellipse cx="274" cy="41" rx="2" ry="2.8" fill="#7a3521"/>
+  </g>
+</g>
+</svg>
