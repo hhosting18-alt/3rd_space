@@ -185,7 +185,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .stage .person.is-dragging, .people-layer .person.is-dragging { cursor: grabbing; z-index: 3; filter: drop-shadow(0 10px 8px rgba(27, 27, 27, .3)); }
 .stage .person.is-returning, .people-layer .person.is-returning { z-index: 2; }
 /* page-wide layer that holds people while they're dragged outside the room's frame or walking back */
-.people-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; z-index: 40; pointer-events: none; }
+.people-layer { position: fixed; left: 0; top: 0; width: 0; height: 0; overflow: visible; z-index: 40; pointer-events: none; }
 .people-layer .person { position: absolute; margin: 0; max-width: none; pointer-events: auto; }
 
 /* ------------------------------------------------------------ why */

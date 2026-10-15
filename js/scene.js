@@ -18,8 +18,12 @@
   var stage = sec.querySelector(".stage");
   var box = sec.querySelector(".stage-box");
   var pin = sec.querySelector(".scene-pin");
-  var layer = document.createElement("div");   // page-wide layer for people outside the frame
+  // screen-wide layer for people outside the frame. It's fixed to the screen, so a dragged person stays
+  // under the cursor while the page scrolls (wheel or auto-scroll). Styles are set inline so a cached
+  // old stylesheet can't hide anyone.
+  var layer = document.createElement("div");
   layer.className = "people-layer";
+  layer.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;overflow:visible;z-index:40;pointer-events:none;";
   document.body.appendChild(layer);
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -83,12 +87,12 @@
     clearTimeout(o.bubbleTimer);
     o.bubble.classList.remove("is-gone");
   }
-  // pos is in page (document) coordinates
+  // pos is in page (document) coordinates; the bubble is drawn in the fixed layer, so convert to the screen
   function placeBubble(o, pos) {
     if (!o.bubble) return;
     var b = o.bubble, bw = b.offsetWidth, bh = b.offsetHeight;
     var docW = document.documentElement.clientWidth;
-    var px = pos[0], py = pos[1] - o.h * k / 2;
+    var px = pos[0] - window.scrollX, py = pos[1] - window.scrollY - o.h * k / 2;
     var left = px + 12, flip = left + bw > docW - 8;
     if (flip) left = px - 12 - bw;
     b.classList.toggle("is-left", flip);
@@ -263,7 +267,15 @@
   function onScroll() {
     if (ticking) return;
     ticking = true;
-    requestAnimationFrame(function () { ticking = false; P = progress(); render(); if (dragging) followPointer(); });
+    requestAnimationFrame(function () { ticking = false; P = progress(); render(); });
+  }
+  // people in the fixed layer are redrawn straight away on scroll, so nothing jumps for a frame
+  function redrawLifted() {
+    people.forEach(function (o) {
+      if (!o.lifted || !o.override) return;
+      if (o === dragging) followPointer();
+      else if (o.last) { drawDoc(o, o.last[0], o.last[1], o.last[2], o.last[3]); placeBubble(o, o.override.pos); }
+    });
   }
 
   /* ---------- drag & drop (anywhere on the page) */
@@ -280,13 +292,20 @@
     if (o.lifted) return;
     o.lifted = true;
     layer.appendChild(o.el);
-    o.el.style.left = "0px";
-    o.el.style.top = "0px";
+    var st = o.el.style;
+    st.position = "absolute";
+    st.left = "0px";
+    st.top = "0px";
+    st.margin = "0";
+    st.maxWidth = "none";
+    st.pointerEvents = "auto";
+    st.touchAction = "none";
   }
   function land(o) {
     if (!o.lifted) return;
     o.lifted = false;
     var p = o.p;
+    o.el.style.position = o.el.style.margin = o.el.style.maxWidth = o.el.style.pointerEvents = "";
     o.el.style.left = p.x + "px";
     o.el.style.top = (p.y - Y0) + "px";
     o.el.style.width = p.w + "px";
@@ -294,10 +313,12 @@
     stage.appendChild(o.el);
   }
   function drawDoc(o, x, y, rot, sc) {          // draw a lifted person, centred on page point x,y
+    o.last = [x, y, rot, sc];
     var w = o.p.w * k, h = o.p.h * k;
+    var sx = x - window.scrollX, sy = y - window.scrollY;   // page -> screen (the layer is fixed)
     o.el.style.width = w + "px";
     o.el.style.height = h + "px";
-    o.el.style.transform = "translate(" + (x - w / 2).toFixed(1) + "px," + (y - h / 2).toFixed(1) +
+    o.el.style.transform = "translate(" + (sx - w / 2).toFixed(1) + "px," + (sy - h / 2).toFixed(1) +
       "px) rotate(" + rot.toFixed(1) + "deg) scale(" + sc.toFixed(3) + ")";
   }
   function inside(p) { return p[0] > ROOM.x1 && p[0] < ROOM.x2 && p[1] > ROOM.y1 && p[1] < ROOM.y2; }
@@ -431,6 +452,6 @@
   layout();
   P = progress();
   render();
-  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("scroll", function () { redrawLifted(); onScroll(); }, { passive: true });
   window.addEventListener("resize", function () { layout(); onScroll(); });
 })();
