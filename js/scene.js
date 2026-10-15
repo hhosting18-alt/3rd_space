@@ -30,7 +30,7 @@
   // room interior and the door, in stage coordinates
   var ROOM = { x1: 135, x2: 1377, y1: 1780 - Y0, y2: 2177 - Y0 };
   var DOOR_OUT = [466, 1738 - Y0], DOOR_IN = [466, 1830 - Y0];
-  var SPEED = 300;                              // walking speed when returning, stage px per second
+  var SPEED = 170;                              // walking speed when returning, stage px per second
 
   var people = [];
   var k = 1, edge = 0, P = 0;
@@ -416,9 +416,9 @@
       if (ov.wait > 0) { ov.wait -= dt; drawDoc(o, ov.pos[0], ov.pos[1], 0, 1); placeBubble(o, ov.pos); return; }
       var tgt = ov.way.length ? stageToDoc(ov.way[0]) : homeDoc;
       var dx = tgt[0] - ov.pos[0], dy = tgt[1] - ov.pos[1], d = Math.hypot(dx, dy);
-      // normal walking pace near the room; hurry back when dropped far away on the page
+      // normal walking pace near the room; a gentle hurry only when dropped far away on the page
       var far = Math.hypot(homeDoc[0] - ov.pos[0], homeDoc[1] - ov.pos[1]);
-      var stepLen = Math.max(SPEED * k, far * 1.4) * dt;
+      var stepLen = Math.max(SPEED * k, far * 0.45) * dt;
       if (d <= stepLen) {
         ov.pos = tgt.slice();
         if (ov.way.length) ov.way.shift();
