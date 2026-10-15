@@ -251,7 +251,8 @@
         var bandSvg = new DOMParser().parseFromString(bandTxt, "image/svg+xml").documentElement;
         if (bandSvg && bandSvg.nodeName.toLowerCase() === "svg") {
           bandSvg = document.importNode(bandSvg, true);
-          var BAND_W = 312, GAP = 8, shift = BAND_W + GAP;
+          var vbB = (bandSvg.getAttribute("viewBox") || "0 0 372 216").trim().split(/[\s,]+/).map(Number);
+          var BAND_W = vbB[2], GAP = 20, shift = BAND_W + GAP;
           var bandG = document.createElementNS(SVGNS, "g");
           bandG.setAttribute("transform", "translate(" + (-shift) + " 0)");
           while (bandSvg.firstChild) bandG.appendChild(bandSvg.firstChild);
@@ -314,8 +315,85 @@
     }
   }
 
-  /* the band's moving parts are marked in band.svg with data-swing / data-bob / data-spin / data-emit
-     (see the comment at the top of that file); this returns a function that poses them for time t */
+  /* the two dancers: a library of moves (poses as a function of the beat) and a schedule of rounds.
+     Angles are degrees, 0 = hanging straight down; negative swings forward/up (-90 = straight ahead,
+     -180 = straight up). x/y shift the whole dancer, spin is a full turn (0..1), lean tips the upper body. */
+  var DANCE_BEAT = 0.45;          // seconds per beat
+  var DANCE_ROUND_BEATS = 16;     // beats per round, then the routine changes
+  var DANCE_ROUNDS = [            // face: -1 turns that dancer around (to face the other one)
+    { girl: "point", boy: "point" },              // together
+    { girl: "wave", boy: "robot" },               // solo
+    { girl: "clap", boy: "clap", boyFace: -1 },   // together, facing each other
+    { girl: "spin", boy: "kick" },                // solo
+    { girl: "twist", boy: "twist" },              // together
+    { girl: "kick", boy: "slide" },               // solo
+    { girl: "spin", boy: "spin" },                // together
+    { girl: "robot", boy: "wave" }                // solo
+  ];
+  var DANCE_MOVES = (function () {
+    var PI = Math.PI, sin = Math.sin, abs = Math.abs, max = Math.max, min = Math.min;
+    var lerp = function (a, b, f) { return a + (b - a) * f; };
+    var sq = function (b, per) { return Math.tanh(3 * sin(2 * PI * b / per)) / Math.tanh(3); };   // soft square wave
+    var pulse = function (b, per, off) { return Math.pow(max(0, sin(2 * PI * (b / per + off))), 2); };
+    var bounce = function (b) { return abs(sin(PI * b)); };
+    var ROBOT = [
+      { shF: -90, elF: -90, shB: 0, elB: 0 }, { shF: 0, elF: 0, shB: -90, elB: -90 },
+      { shF: -90, elF: 0, shB: -90, elB: 0 }, { shF: -180, elF: 0, shB: 0, elB: -90 }
+    ];
+    return {
+      point: function (b) {        // disco: one arm shoots up, then the other
+        var a = (1 + sq(b, 4)) / 2;
+        return { shF: lerp(-25, -170, a), elF: lerp(-80, 0, a), shB: lerp(-170, -25, a), elB: lerp(0, -80, a),
+                 lean: lerp(-6, 8, a), legF: -8 * sq(b, 4), legB: 8 * sq(b, 4), y: -2.5 * bounce(b) };
+      },
+      wave: function (b) {         // both arms up, swaying overhead
+        var w = sin(PI * b);
+        return { shF: -155 + 18 * w, elF: -25 * w, shB: -150 + 18 * w, elB: -25 * w,
+                 lean: 7 * w, legF: 4 * w, legB: -4 * w, y: -2 * bounce(b) };
+      },
+      clap: function (b) {         // arms out front, clapping on every beat with a little hop
+        var c = pulse(b, 1, 0);
+        return { shF: -82 - 10 * c, elF: -35 + 30 * c, shB: -76 - 10 * c, elB: -40 + 30 * c,
+                 lean: 4, legF: -5, legB: 5, y: -3 * c };
+      },
+      kick: function (b) {         // high kicks, left then right, arms pumping
+        var k1 = pulse(b, 2, 0), k2 = pulse(b, 2, 0.5);
+        return { legF: -55 * k1, legB: -55 * k2, shF: -20 - 60 * k2, shB: -20 - 60 * k1, elF: -80, elB: -80,
+                 lean: -6 * (k1 + k2) };
+      },
+      spin: function (b) {         // a full spin every 4 beats, arms up while turning
+        var p = (b % 4) / 1.6, env = p < 1.3 ? sin(PI * min(1, p / 1.3)) : 0, s = sin(PI * b);
+        return { spin: p < 1 ? p : 0, shF: lerp(-60 + 30 * s, -175, env), shB: lerp(-60 - 30 * s, -175, env),
+                 elF: lerp(-60, 0, env), elB: lerp(-60, 0, env), y: -4 * env - 2 * bounce(b) * (1 - env) };
+      },
+      robot: function (b) {        // stiff right angles, snapping to a new pose on each beat
+        var k = Math.floor(b), f = min(1, (b - k) / 0.2), f2 = f * f * (3 - 2 * f);
+        var A = ROBOT[(k + 3) % 4], B = ROBOT[k % 4], o = {};
+        Object.keys(B).forEach(function (j) { o[j] = lerp(A[j], B[j], f2); });
+        o.legF = (k % 2 ? 6 : -6); o.legB = -o.legF;
+        return o;
+      },
+      twist: function (b) {        // twisting on the spot
+        var tw = sin(2 * PI * b);
+        return { legF: 12 * tw, legB: 12 * tw, lean: -8 * tw, shF: -50 + 20 * tw, shB: -50 - 20 * tw,
+                 elF: -90, elB: -90, y: -2 * bounce(b) };
+      },
+      slide: function (b) {        // gliding back and forth, moonwalk style
+        return { x: 10 * sin(PI * b / 4), legF: 10 * sq(b, 2), legB: -10 * sq(b, 2), lean: -6,
+                 shF: -15 - 25 * bounce(b), shB: 10, elF: -40, elB: -20 };
+      }
+    };
+  })();
+  var POSE_KEYS = ["legB", "legF", "body", "shB", "elB", "shF", "elF", "lean", "x", "y", "spin"];
+  function dancePose(name, b) {
+    var p = DANCE_MOVES[name](b), o = {};
+    POSE_KEYS.forEach(function (k) { o[k] = p[k] || 0; });
+    o.body = o.lean;
+    return o;
+  }
+
+  /* the band's moving parts are marked in band.svg with data-swing / data-bob / data-emit / data-dancer
+     (see the comments in that file); this returns a function that poses everything for time t */
   function setupBand(band) {
     var SVGNS = "http://www.w3.org/2000/svg", XLINK = "http://www.w3.org/1999/xlink";
     var NOTE_COLORS = ["#a259ff", "#353ed7", "#ff5c5c", "#1b1b1b", "#e35e30"];
@@ -324,14 +402,21 @@
       var v = nums(el, "data-swing");
       return { el: el, amp: +v[0], per: +v[1], ph: +v[2], px: +v[3], py: +v[4], pulse: v[5] === "pulse", leg: el.hasAttribute("data-leg") };
     });
-    var movers = [].map.call(band.querySelectorAll("[data-bob],[data-spin]"), function (el) {
-      var b = el.hasAttribute("data-bob") ? nums(el, "data-bob") : [0, 1, 0];
-      var s = el.hasAttribute("data-spin") ? nums(el, "data-spin") : null;
-      return { el: el, amp: +b[0], per: +b[1], ph: +b[2], spin: s ? +s[0] : 0, spx: s ? +s[1] : 0 };
+    var movers = [].map.call(band.querySelectorAll("[data-bob]"), function (el) {
+      var b = nums(el, "data-bob");
+      return { el: el, amp: +b[0], per: +b[1], ph: +b[2] };
     });
     var emitters = [].map.call(band.querySelectorAll("[data-emit]"), function (el) {
       var v = nums(el, "data-emit");
       return { x: +v[0], y: +v[1], ang: +v[2] * Math.PI / 180, every: +v[3], next: Math.random() * +v[3] };
+    });
+    var dancers = [].map.call(band.querySelectorAll("[data-dancer]"), function (el) {
+      var v = nums(el, "data-dancer"), joints = {};
+      [].forEach.call(el.querySelectorAll("[data-joint]"), function (j) {
+        var w = nums(j, "data-joint");
+        joints[w[0]] = { el: j, px: +w[1], py: +w[2] };
+      });
+      return { el: el, name: v[0], cx: +v[1], joints: joints };
     });
     var notes = [], wave = function (t, per, ph) { return Math.sin(2 * Math.PI * (t / per + ph)); };
     function spawn(em) {                         // a little music note floats out, drifts up and fades
@@ -344,6 +429,25 @@
       notes.push({ el: u, x: em.x, y: em.y, ang: em.ang + (Math.random() - 0.5) * 0.5, sp: 18 + Math.random() * 10,
                    age: 0, life: 2.2 + Math.random() * 0.9, seed: Math.random() * 6.28, size: 0.75 + Math.random() * 0.35 });
     }
+    function dance(d, t) {
+      var beats = t / DANCE_BEAT, r = Math.floor(beats / DANCE_ROUND_BEATS), b = beats - r * DANCE_ROUND_BEATS;
+      var cur = DANCE_ROUNDS[r % DANCE_ROUNDS.length], prev = DANCE_ROUNDS[(r + DANCE_ROUNDS.length - 1) % DANCE_ROUNDS.length];
+      var pose = dancePose(cur[d.name], b);
+      var f = Math.min(1, b / 1.5);              // ease from the last routine into the new one
+      f = f * f * (3 - 2 * f);
+      if (f < 1) {
+        var old = dancePose(prev[d.name], b + DANCE_ROUND_BEATS);
+        POSE_KEYS.forEach(function (k) { pose[k] = old[k] + (pose[k] - old[k]) * f; });
+      }
+      var face = (prev[d.name + "Face"] || 1) + ((cur[d.name + "Face"] || 1) - (prev[d.name + "Face"] || 1)) * f;
+      var sx = face * Math.cos(2 * Math.PI * pose.spin);
+      d.el.setAttribute("transform", "translate(" + pose.x.toFixed(2) + " " + pose.y.toFixed(2) + ") translate(" + d.cx +
+        " 0) scale(" + sx.toFixed(3) + " 1) translate(" + (-d.cx) + " 0)");
+      Object.keys(d.joints).forEach(function (k) {
+        var j = d.joints[k];
+        j.el.setAttribute("transform", "rotate(" + (pose[k] || 0).toFixed(2) + " " + j.px + " " + j.py + ")");
+      });
+    }
     return function update(t, dt, still) {
       swings.forEach(function (p) {
         var w = wave(t, p.per, p.ph);
@@ -352,13 +456,9 @@
         p.el.setAttribute("transform", "rotate(" + (p.amp * w).toFixed(2) + " " + p.px + " " + p.py + ")");
       });
       movers.forEach(function (m) {
-        var tr = "translate(0 " + (-m.amp * Math.abs(wave(t, m.per, m.ph))).toFixed(2) + ")";
-        if (m.spin) {
-          var u = (t % m.spin) / 0.7, c = u < 1 ? Math.cos(2 * Math.PI * u) : 1;
-          if (c < 1) tr += " translate(" + m.spx + " 0) scale(" + c.toFixed(3) + " 1) translate(" + (-m.spx) + " 0)";
-        }
-        m.el.setAttribute("transform", tr);
+        m.el.setAttribute("transform", "translate(0 " + (-m.amp * Math.abs(wave(t, m.per, m.ph))).toFixed(2) + ")");
       });
+      dancers.forEach(function (d) { dance(d, t); });
       emitters.forEach(function (em) {
         em.next -= dt;
         if (em.next <= 0) { spawn(em); em.next = em.every * (0.6 + Math.random() * 0.8); }

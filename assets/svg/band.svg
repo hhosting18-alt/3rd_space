@@ -1,12 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 312 216.1" width="312" height="216.1">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 372 216.1" width="372" height="216.1">
 <!-- Marching band that trails the footer crowd. Same flat style / palette as crowd.svg.
      Moving parts are marked for js/main.js:
        data-swing="amp period phase px py"  rotate around (px,py) by amp*sin(2pi(t/period+phase)) degrees
        data-leg                             the swing calms down while the group pauses
        data-bob="amp period phase"          bounce up and down
        data-emit="x y angle every"          spawns music notes at x,y heading towards angle (deg, 0 = forward, -90 = up)
-       data-swing="... pulse"               only swings one way, in short bursts (kicks, arm points)
-       data-spin="period px"                a quick full spin around x = px once every period seconds -->
+       data-swing="... pulse"               only swings one way, in short bursts -->
 <defs>
   <g id="band-note1">
     <ellipse cx="0" cy="0" rx="3.4" ry="2.5" transform="rotate(-22)"/>
@@ -158,45 +157,97 @@
   <g data-emit="210 43 -45 0.9"/>
 </g>
 
-<!-- ============ DANCER (between the band and the crowd): kicks, spins, points, toe-stands ============ -->
-<g id="dancer" data-bob="3 0.8 0" data-spin="5.5 276">
-  <!-- standing leg -->
-  <g data-swing="6 0.8 0.5 276 120">
-    <path d="M270 116 L282 116 L279 196 L271 196 Z" fill="#1b1b1b"/>
-    <path d="M269 191 L280 191 L286 198 L286 203 L268 203 Z" fill="#f6e8df"/>
-    <path d="M268 201 L286 201 L286 203 L268 203 Z" fill="#9e5f3e"/>
+<!-- ============ DANCERS: a girl and a boy. js/main.js choreographs them (see DANCE_ROUNDS there):
+     every round they switch routines, some rounds together, some on their own.
+     data-dancer="name centreX"; data-joint="name pivotX pivotY" marks each joint, drawn in a neutral pose
+     (standing, arms hanging): legB/legF (legs), body (sways from the hips), shB/elB (back shoulder/elbow),
+     shF/elF (front shoulder/elbow). ============ -->
+<g data-dancer="girl 284">
+  <g data-joint="legB 280 118">
+    <path d="M275 114 L285 114 L283 196 L276 196 Z" fill="#c9846a"/>
+    <path d="M274 191 L284 191 L290 198 L290 203 L273 203 Z" fill="#f6e8df"/>
+    <path d="M273 201 L290 201 L290 203 L273 203 Z" fill="#ff5c5c"/>
   </g>
-  <!-- kicking leg -->
-  <g data-swing="-48 1.6 0 276 120 pulse">
-    <path d="M270 116 L282 116 L281 196 L272 196 Z" fill="#2b2b2b"/>
-    <path d="M271 191 L282 191 L289 198 L289 204 L270 204 Z" fill="#ffffff"/>
-    <path d="M270 202 L289 202 L289 204 L270 204 Z" fill="#9e5f3e"/>
+  <g data-joint="legF 288 118">
+    <path d="M283 114 L293 114 L292 196 L285 196 Z" fill="#e19b77"/>
+    <path d="M284 191 L294 191 L300 198 L300 204 L283 204 Z" fill="#ffffff"/>
+    <path d="M283 202 L300 202 L300 204 L283 204 Z" fill="#ff5c5c"/>
   </g>
-  <!-- upper body sways from the hips -->
-  <g data-swing="7 0.8 0.25 276 122">
-    <!-- arm on the hip: elbow out to the side so it shows past the jacket -->
-    <path d="M265 67 C 258 74 252 82 249 92" stroke="#8a47e0" stroke-width="7" stroke-linecap="round" fill="none"/>
-    <path d="M249 92 C 252 101 257 107 263 110" stroke="#a14e36" stroke-width="6" stroke-linecap="round" fill="none"/>
-    <!-- torso: purple jacket over a white tee -->
-    <path d="M262 72 C 262 62 268 58 276 58 C 284 58 290 63 290 72 L290 124 L261 124 Z" fill="#a259ff"/>
-    <path d="M272 60 L280 60 L279 124 L273 124 Z" fill="#f6e8df"/>
-    <path d="M272 60 L268 84 L273 124" stroke="#7d3fd6" stroke-width="1.2" fill="none"/>
-    <path d="M280 60 L284 84 L279 124" stroke="#7d3fd6" stroke-width="1.2" fill="none"/>
-    <path d="M261 117 L290 117" stroke="#1b1b1b" stroke-width="3"/>
-    <!-- pointing arm: shoots up to the sky -->
-    <g data-swing="-120 1.6 0.5 285 66 pulse">
-      <path d="M285 66 C 293 76 298 86 300 96" stroke="#a259ff" stroke-width="7" stroke-linecap="round" fill="none"/>
-      <path d="M300 96 L301 104" stroke="#a14e36" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+  <g data-joint="body 284 118">
+    <!-- ponytail -->
+    <path d="M279 27 C 265 28 259 44 263 62 C 268 50 271 40 281 33 Z" fill="#4b2522"/>
+    <!-- back arm -->
+    <g data-joint="shB 275 70">
+      <path d="M275 70 L276 92" stroke="#c9846a" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <g data-joint="elB 276 92">
+        <path d="M276 92 L277 110" stroke="#c9846a" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+        <circle cx="277" cy="112" r="3" fill="#c9846a"/>
+      </g>
     </g>
+    <!-- top + skirt -->
+    <rect x="280" y="50" width="8" height="13" fill="#e19b77"/>
+    <path d="M270 74 C 270 66 275 62 284 62 C 293 62 298 66 298 74 L297 110 L271 110 Z" fill="#ff5c5c"/>
+    <path d="M270 106 L298 106 L305 134 L263 134 Z" fill="#353ed7"/>
+    <path d="M276 108 L272 134 M284 108 L284 134 M292 108 L296 134" stroke="#2a31ad" stroke-width="1" fill="none"/>
     <!-- head -->
-    <rect x="272" y="47" width="8" height="12" fill="#a14e36"/>
-    <ellipse cx="279" cy="39" rx="11" ry="13" fill="#a14e36"/>
-    <circle cx="272" cy="28" r="6" fill="#1b1b1b"/>
-    <circle cx="280" cy="25.5" r="6" fill="#1b1b1b"/>
-    <circle cx="287" cy="29" r="5" fill="#1b1b1b"/>
-    <circle cx="268" cy="35" r="5.5" fill="#1b1b1b"/>
-    <circle cx="268" cy="43" r="4.5" fill="#1b1b1b"/>
-    <ellipse cx="274" cy="41" rx="2" ry="2.8" fill="#7a3521"/>
+    <ellipse cx="287" cy="42" rx="10.5" ry="12.5" fill="#e19b77"/>
+    <path d="M276 41 C 274 28 282 24 290 26 C 296 27 299 32 298 35 C 290 33 284 35 280 45 Z" fill="#4b2522"/>
+    <circle cx="279" cy="28" r="4.5" fill="#4b2522"/>
+    <ellipse cx="282" cy="43" rx="1.9" ry="2.6" fill="#c9846a"/>
+    <!-- front arm -->
+    <g data-joint="shF 293 70">
+      <path d="M293 70 L294 92" stroke="#e19b77" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <path d="M288 66 C 292 63 298 66 298 72 L297 78 L290 78 Z" fill="#ff5c5c"/>
+      <g data-joint="elF 294 92">
+        <path d="M294 92 L295 110" stroke="#e19b77" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+        <circle cx="295" cy="112" r="3" fill="#e19b77"/>
+      </g>
+    </g>
+  </g>
+</g>
+
+<g data-dancer="boy 340">
+  <g data-joint="legB 336 120">
+    <path d="M330 116 L342 116 L340 196 L331 196 Z" fill="#1b1b1b"/>
+    <path d="M329 191 L341 191 L347 198 L347 203 L328 203 Z" fill="#f6e8df"/>
+    <path d="M328 201 L347 201 L347 203 L328 203 Z" fill="#9e5f3e"/>
+  </g>
+  <g data-joint="legF 344 120">
+    <path d="M338 116 L350 116 L349 196 L340 196 Z" fill="#2b2b2b"/>
+    <path d="M339 191 L350 191 L357 198 L357 204 L338 204 Z" fill="#ffffff"/>
+    <path d="M338 202 L357 202 L357 204 L338 204 Z" fill="#9e5f3e"/>
+  </g>
+  <g data-joint="body 340 120">
+    <!-- back arm -->
+    <g data-joint="shB 329 66">
+      <path d="M329 66 L330 90" stroke="#8a47e0" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <g data-joint="elB 330 90">
+        <path d="M330 90 L331 110" stroke="#8f4530" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle cx="331" cy="112" r="3.3" fill="#8f4530"/>
+      </g>
+    </g>
+    <!-- torso: purple jacket over a white tee -->
+    <rect x="336" y="47" width="8" height="12" fill="#a14e36"/>
+    <path d="M326 72 C 326 62 332 58 340 58 C 348 58 354 63 354 72 L354 124 L325 124 Z" fill="#a259ff"/>
+    <path d="M336 60 L344 60 L343 124 L337 124 Z" fill="#f6e8df"/>
+    <path d="M336 60 L332 84 L337 124 M344 60 L348 84 L343 124" stroke="#7d3fd6" stroke-width="1.2" fill="none"/>
+    <path d="M325 117 L354 117" stroke="#1b1b1b" stroke-width="3"/>
+    <!-- head -->
+    <ellipse cx="343" cy="39" rx="11" ry="13" fill="#a14e36"/>
+    <circle cx="336" cy="28" r="6" fill="#1b1b1b"/>
+    <circle cx="344" cy="25.5" r="6" fill="#1b1b1b"/>
+    <circle cx="351" cy="29" r="5" fill="#1b1b1b"/>
+    <circle cx="332" cy="35" r="5.5" fill="#1b1b1b"/>
+    <circle cx="332" cy="43" r="4.5" fill="#1b1b1b"/>
+    <ellipse cx="338" cy="41" rx="2" ry="2.8" fill="#7a3521"/>
+    <!-- front arm -->
+    <g data-joint="shF 349 66">
+      <path d="M349 66 L350 90" stroke="#a259ff" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <g data-joint="elF 350 90">
+        <path d="M350 90 L351 110" stroke="#a14e36" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle cx="351" cy="112" r="3.3" fill="#a14e36"/>
+      </g>
+    </g>
   </g>
 </g>
 </svg>
