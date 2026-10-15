@@ -2,8 +2,11 @@
    Row 1 walks in from the left and stops in its line.
    Row 2 (plus the people on the path) walks along the line, down through the door and into the room;
    four of them take the chairs at the table, two on each side facing each other.
-   Anyone can be dragged and dropped anywhere on screen; they then walk back to their spot,
+   Anyone can be dragged and dropped anywhere on the page (outside the room's frame too, and the page
+   scrolls when you drag near the top or bottom edge); they then walk back to their spot,
    going through the door if they need to get into (or out of) the room.
+   While dragged or walking back, a person lives in a page-wide layer (.people-layer) so the
+   scene's clipped frame can't hide them; once home they're put back on the stage.
    Positions come from js/scene-data.js (generated from the Figma file by build_assets.py). */
 (function () {
   "use strict";
@@ -15,6 +18,9 @@
   var stage = sec.querySelector(".stage");
   var box = sec.querySelector(".stage-box");
   var pin = sec.querySelector(".scene-pin");
+  var layer = document.createElement("div");   // page-wide layer for people outside the frame
+  layer.className = "people-layer";
+  document.body.appendChild(layer);
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // room interior and the door, in stage coordinates
@@ -71,21 +77,22 @@
       var b = document.createElement("div");
       b.className = "thought";
       b.textContent = o.qi != null ? QUEUE_LINES[o.qi % QUEUE_LINES.length] : LINES[o.index % LINES.length];
-      pin.appendChild(b);
+      layer.appendChild(b);
       o.bubble = b;
     }
     clearTimeout(o.bubbleTimer);
     o.bubble.classList.remove("is-gone");
   }
-  function placeBubble(o, x, y) {
+  // pos is in page (document) coordinates
+  function placeBubble(o, pos) {
     if (!o.bubble) return;
-    var r = box.getBoundingClientRect(), pr = pin.getBoundingClientRect();
-    var px = r.left - pr.left + x * k, py = r.top - pr.top + (y - cropTop - o.h / 2) * k;
     var b = o.bubble, bw = b.offsetWidth, bh = b.offsetHeight;
-    var left = px + 12, flip = left + bw > pr.width - 8;
+    var docW = document.documentElement.clientWidth;
+    var px = pos[0], py = pos[1] - o.h * k / 2;
+    var left = px + 12, flip = left + bw > docW - 8;
     if (flip) left = px - 12 - bw;
     b.classList.toggle("is-left", flip);
-    b.style.transform = "translate(" + left.toFixed(1) + "px," + Math.max(8, py - bh - 20).toFixed(1) + "px)";
+    b.style.transform = "translate(" + Math.max(8, left).toFixed(1) + "px," + Math.max(8, py - bh - 20).toFixed(1) + "px)";
   }
   function hideBubble(o, delay) {
     if (!o.bubble) return;
@@ -115,7 +122,7 @@
     stage.appendChild(img);
     var c0 = center(p);
     var o = {
-      el: img, c0: c0, h: p.h, index: people.length, qi: queueIndex, override: null, bubble: null,
+      el: img, p: p, c0: c0, h: p.h, index: people.length, qi: queueIndex, override: null, bubble: null, lifted: false,
       stateAt: stateAt || function () { return { x: c0[0], y: c0[1], rot: 0, sc: 1 }; }
     };
     img._person = o;
@@ -218,6 +225,7 @@
       if (o.override) return;
       var s = o.stateAt(P);
       draw(o, s.x, s.y, s.rot, s.sc);
+      if (o.bubble) placeBubble(o, stageToDoc([s.x, s.y]));   // a thought still lingering after they got home
     });
   }
   function layout() {
@@ -255,20 +263,42 @@
   function onScroll() {
     if (ticking) return;
     ticking = true;
-    requestAnimationFrame(function () { ticking = false; P = progress(); render(); });
+    requestAnimationFrame(function () { ticking = false; P = progress(); render(); if (dragging) followPointer(); });
   }
 
-  /* ---------- drag & drop */
-  function toStage(e) {
-    var r = box.getBoundingClientRect();
-    return [(e.clientX - r.left) / k, (e.clientY - r.top) / k + cropTop];
+  /* ---------- drag & drop (anywhere on the page) */
+  // stage coordinates <-> page (document) coordinates; the stage box is sticky, so this changes with scroll
+  function boxDoc() { var r = box.getBoundingClientRect(); return [r.left + window.scrollX, r.top + window.scrollY]; }
+  function stageToDoc(p) { var b = boxDoc(); return [b[0] + p[0] * k, b[1] + (p[1] - cropTop) * k]; }
+  function docToStage(p) { var b = boxDoc(); return [(p[0] - b[0]) / k, (p[1] - b[1]) / k + cropTop]; }
+  function docSize() {
+    var d = document.documentElement;
+    return [d.clientWidth, Math.max(d.scrollHeight, document.body.scrollHeight)];
   }
-  function visibleArea() {                      // the part of the stage plane currently on screen
-    var r = box.getBoundingClientRect(), pr = pin.getBoundingClientRect();
-    return {
-      x1: (Math.max(pr.left, 0) - r.left) / k + 25, x2: (Math.min(pr.right, window.innerWidth) - r.left) / k - 25,
-      y1: (Math.max(pr.top, 0) - r.top) / k + cropTop + 25, y2: (Math.min(pr.bottom, window.innerHeight) - r.top) / k + cropTop - 25
-    };
+  // move a person out of the clipped frame into the page layer, and back again
+  function lift(o) {
+    if (o.lifted) return;
+    o.lifted = true;
+    layer.appendChild(o.el);
+    o.el.style.left = "0px";
+    o.el.style.top = "0px";
+  }
+  function land(o) {
+    if (!o.lifted) return;
+    o.lifted = false;
+    var p = o.p;
+    o.el.style.left = p.x + "px";
+    o.el.style.top = (p.y - Y0) + "px";
+    o.el.style.width = p.w + "px";
+    o.el.style.height = p.h + "px";
+    stage.appendChild(o.el);
+  }
+  function drawDoc(o, x, y, rot, sc) {          // draw a lifted person, centred on page point x,y
+    var w = o.p.w * k, h = o.p.h * k;
+    o.el.style.width = w + "px";
+    o.el.style.height = h + "px";
+    o.el.style.transform = "translate(" + (x - w / 2).toFixed(1) + "px," + (y - h / 2).toFixed(1) +
+      "px) rotate(" + rot.toFixed(1) + "deg) scale(" + sc.toFixed(3) + ")";
   }
   function inside(p) { return p[0] > ROOM.x1 && p[0] < ROOM.x2 && p[1] > ROOM.y1 && p[1] < ROOM.y2; }
   function aboveRoom(p) { return p[1] < ROOM.y1 - 30; }
@@ -293,78 +323,101 @@
     return [];
   }
 
-  var dragging = null;
-  stage.addEventListener("pointerdown", function (e) {
+  // override.pos is in page coordinates; override.way holds waypoints in stage coordinates
+  var dragging = null, dragId = null, lastClient = [0, 0];
+  function followPointer() {
+    var o = dragging, ov = o.override, s = docSize();
+    ov.pos = [clamp(lastClient[0] + window.scrollX + ov.off[0], 20, s[0] - 20),
+              clamp(lastClient[1] + window.scrollY + ov.off[1], 20, s[1] - 20)];
+    drawDoc(o, ov.pos[0], ov.pos[1], 8, 1.12);
+    placeBubble(o, ov.pos);
+  }
+  function grab(e) {
     var o = e.target._person;
-    if (!o || e.button > 0) return;
+    if (!o || e.button > 0 || dragging) return;
     e.preventDefault();
     var pos;
     if (o.override) pos = o.override.pos.slice();
-    else { var s = o.stateAt(P); pos = [s.x, s.y]; }
-    var pt = toStage(e);
+    else { var s = o.stateAt(P); pos = stageToDoc([s.x, s.y]); }
+    lift(o);
+    var pt = [e.clientX + window.scrollX, e.clientY + window.scrollY];
     o.override = { mode: "drag", pos: pos, off: [pos[0] - pt[0], pos[1] - pt[1]], dist: 0, way: [], wait: 0 };
     dragging = o;
-    o.el.setPointerCapture(e.pointerId);
+    dragId = e.pointerId;
+    lastClient = [e.clientX, e.clientY];
+    try { o.el.setPointerCapture(e.pointerId); } catch (err) { /* still works via window listeners */ }
     o.el.classList.remove("is-returning");
     o.el.classList.add("is-dragging");
-    draw(o, pos[0], pos[1], 8, 1.12);
-    placeBubble(o, pos[0], pos[1]);
-  });
-  stage.addEventListener("pointermove", function (e) {
-    if (!dragging || e.target !== dragging.el) return;
-    var ov = dragging.override, pt = toStage(e), b = visibleArea();
-    ov.pos = [clamp(pt[0] + ov.off[0], b.x1, b.x2), clamp(pt[1] + ov.off[1], b.y1, b.y2)];
-    draw(dragging, ov.pos[0], ov.pos[1], 8, 1.12);
-    placeBubble(dragging, ov.pos[0], ov.pos[1]);
+    followPointer();
+    startLoop();                                // also drives auto-scroll near the screen edges
+  }
+  stage.addEventListener("pointerdown", grab);
+  layer.addEventListener("pointerdown", grab);   // grabbing someone again while they walk back
+  window.addEventListener("pointermove", function (e) {
+    if (!dragging || e.pointerId !== dragId) return;
+    lastClient = [e.clientX, e.clientY];
+    followPointer();
   });
   function drop(e) {
-    if (!dragging || e.target !== dragging.el) return;
+    if (!dragging || e.pointerId !== dragId) return;
     var o = dragging, ov = o.override, s = o.stateAt(P);
     dragging = null;
+    dragId = null;
     o.el.classList.remove("is-dragging");
     o.el.classList.add("is-returning");
     ov.mode = "return";
-    ov.way = route(ov.pos, [s.x, s.y]);
+    ov.way = route(docToStage(ov.pos), [s.x, s.y]);
     ov.wait = 0.35;                             // a short beat before walking back
     showBubble(o);
-    placeBubble(o, ov.pos[0], ov.pos[1]);
+    placeBubble(o, ov.pos);
     startLoop();
   }
-  stage.addEventListener("pointerup", drop);
-  stage.addEventListener("pointercancel", drop);
+  window.addEventListener("pointerup", drop);
+  window.addEventListener("pointercancel", drop);
 
   var running = false, last = 0;
   function step(now) {
     var dt = Math.min(0.05, (now - last) / 1000 || 0.016);
     last = now;
     var busy = false;
+    if (dragging) {                             // auto-scroll when dragging near the top or bottom of the screen
+      busy = true;
+      var vh = window.innerHeight, zone = Math.min(90, vh * 0.12), cy = lastClient[1], v = 0;
+      if (cy < zone) v = -(1 - cy / zone);
+      else if (cy > vh - zone) v = (cy - (vh - zone)) / zone;
+      if (v) { window.scrollBy({ top: v * 1100 * dt, behavior: "instant" }); followPointer(); }
+    }
     people.forEach(function (o) {
       var ov = o.override;
       if (!ov || ov.mode !== "return") return;
       busy = true;
-      var home = o.stateAt(P);
-      if (ov.wait > 0) { ov.wait -= dt; draw(o, ov.pos[0], ov.pos[1], 0, 1); placeBubble(o, ov.pos[0], ov.pos[1]); return; }
-      var tgt = ov.way.length ? ov.way[0] : [home.x, home.y];
-      var dx = tgt[0] - ov.pos[0], dy = tgt[1] - ov.pos[1], d = Math.hypot(dx, dy), stepLen = SPEED * dt;
+      var home = o.stateAt(P), homeDoc = stageToDoc([home.x, home.y]);
+      if (ov.wait > 0) { ov.wait -= dt; drawDoc(o, ov.pos[0], ov.pos[1], 0, 1); placeBubble(o, ov.pos); return; }
+      var tgt = ov.way.length ? stageToDoc(ov.way[0]) : homeDoc;
+      var dx = tgt[0] - ov.pos[0], dy = tgt[1] - ov.pos[1], d = Math.hypot(dx, dy);
+      // normal walking pace near the room; hurry back when dropped far away on the page
+      var far = Math.hypot(homeDoc[0] - ov.pos[0], homeDoc[1] - ov.pos[1]);
+      var stepLen = Math.max(SPEED * k, far * 1.4) * dt;
       if (d <= stepLen) {
         ov.pos = tgt.slice();
         if (ov.way.length) ov.way.shift();
         else {
           o.override = null;
           o.el.classList.remove("is-returning");
+          land(o);
           draw(o, home.x, home.y, home.rot, home.sc);
-          placeBubble(o, home.x, home.y);
+          placeBubble(o, homeDoc);
           hideBubble(o, 900);                   // let the thought linger a moment once they're back
           return;
         }
       } else {
         ov.pos = [ov.pos[0] + dx / d * stepLen, ov.pos[1] + dy / d * stepLen];
       }
-      ov.dist += Math.min(stepLen, d);
-      var rem = ov.way.length ? 999 : Math.hypot(home.x - ov.pos[0], home.y - ov.pos[1]);
+      ov.dist += Math.min(stepLen, d) / k;
+      var rem = ov.way.length ? 999 : Math.hypot(homeDoc[0] - ov.pos[0], homeDoc[1] - ov.pos[1]) / k;
       var settle = clamp(1 - rem / 60, 0, 1);
-      draw(o, ov.pos[0], ov.pos[1], Math.sin(ov.dist / 9) * 7 * (1 - settle) + home.rot * settle, 1 + (home.sc - 1) * settle);
-      placeBubble(o, ov.pos[0], ov.pos[1]);
+      drawDoc(o, ov.pos[0], ov.pos[1], Math.sin(ov.dist / 9) * 7 * (1 - settle) + home.rot * settle, 1 + (home.sc - 1) * settle);
+      placeBubble(o, ov.pos);
     });
     if (busy) requestAnimationFrame(step); else running = false;
   }

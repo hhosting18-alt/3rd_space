@@ -181,9 +181,12 @@ button, input, textarea { font: inherit; color: inherit; }
 .stage .s-note b { font-family: var(--display); font-weight: 900; }
 .stage .s-floor { left: 100px; top: 505px; width: 1310px; height: 450px; }
 .stage .s-amen { list-style: none; padding: 0; left: 156px; top: 973px; width: 1200px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 80px; font-family: var(--body); font-size: 18px; }
-.stage .person { will-change: transform; transform-origin: 50% 50%; cursor: grab; touch-action: none; user-select: none; -webkit-user-drag: none; }
-.stage .person.is-dragging { cursor: grabbing; z-index: 3; filter: drop-shadow(0 10px 8px rgba(27, 27, 27, .3)); }
-.stage .person.is-returning { z-index: 2; }
+.stage .person, .people-layer .person { will-change: transform; transform-origin: 50% 50%; cursor: grab; touch-action: none; user-select: none; -webkit-user-drag: none; }
+.stage .person.is-dragging, .people-layer .person.is-dragging { cursor: grabbing; z-index: 3; filter: drop-shadow(0 10px 8px rgba(27, 27, 27, .3)); }
+.stage .person.is-returning, .people-layer .person.is-returning { z-index: 2; }
+/* page-wide layer that holds people while they're dragged outside the room's frame or walking back */
+.people-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; z-index: 40; pointer-events: none; }
+.people-layer .person { position: absolute; margin: 0; max-width: none; pointer-events: auto; }
 
 /* ------------------------------------------------------------ why */
 .why { padding-top: clamp(56px, 7.9vw, 120px); }
