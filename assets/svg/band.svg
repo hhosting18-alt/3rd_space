@@ -174,8 +174,9 @@
   </g>
   <!-- upper body sways from the hips -->
   <g data-swing="7 0.8 0.25 276 122">
-    <!-- arm on the hip -->
-    <path d="M266 70 C 258 84 260 96 270 104" stroke="#7a3521" stroke-width="6.5" stroke-linecap="round" fill="none"/>
+    <!-- arm on the hip: elbow out to the side so it shows past the jacket -->
+    <path d="M265 67 C 258 74 252 82 249 92" stroke="#8a47e0" stroke-width="7" stroke-linecap="round" fill="none"/>
+    <path d="M249 92 C 252 101 257 107 263 110" stroke="#a14e36" stroke-width="6" stroke-linecap="round" fill="none"/>
     <!-- torso: purple jacket over a white tee -->
     <path d="M262 72 C 262 62 268 58 276 58 C 284 58 290 63 290 72 L290 124 L261 124 Z" fill="#a259ff"/>
     <path d="M272 60 L280 60 L279 124 L273 124 Z" fill="#f6e8df"/>
